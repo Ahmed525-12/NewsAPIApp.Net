@@ -7,5 +7,7 @@ namespace NewsApi.AppHandler.Genrics.Intrefaces
         Task<int> CompleteAsync();
 
         IGenricRepo<T> Repository<T>() where T : BaseEntity;
+
+        void Detach<T>(T entity) where T : BaseEntity;
     }
 }

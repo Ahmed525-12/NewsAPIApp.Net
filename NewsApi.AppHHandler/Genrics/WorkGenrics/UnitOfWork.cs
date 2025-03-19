@@ -1,4 +1,5 @@
-﻿using NewsApi.AppHandler.Genrics.Intrefaces;
+﻿using Microsoft.EntityFrameworkCore;
+using NewsApi.AppHandler.Genrics.Intrefaces;
 using NewsApi.AppHandler.Genrics.WorkGenrics;
 using NewsApi.Infastrcture.AppInfa;
 using NewsAPI.Domain.AppEntity;
@@ -32,6 +33,11 @@ namespace HospitalAPP.Genrics.WorkGenrics
                 Repo.Add(type, repository);
             }
             return (IGenricRepo<T>)Repo[type]!;
+        }
+
+        public void Detach<T>(T entity) where T : BaseEntity
+        {
+            _dbContext.Entry(entity).State = EntityState.Detached;
         }
     }
 }
