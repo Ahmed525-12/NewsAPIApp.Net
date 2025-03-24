@@ -8,6 +8,8 @@ using NewsApi.AppHandler.Wrapper.WorkWrapper;
 
 using NewsAPI.Domain.DTOS.UserAccountDto;
 using System.Reflection;
+using NewsApi.AppHandler.Mapping;
+using NewsAPI.Domain.DTOS.BannersDto;
 
 namespace NewsAPIApp.Controllers
 {
@@ -23,12 +25,13 @@ namespace NewsAPIApp.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Banners>>> GetBanners()
+        public async Task<ActionResult<IEnumerable<BannersReadDTO>>> GetBanners()
         {
             try
             {
                 var banners = await _unitOfWork.Repository<Banners>().GetAllWithAsync();
-                return Ok(ResultResponse<IEnumerable<Banners>>.Success(banners, "sucess"));
+                var ResultBanners = BannerMapProfile.ToPlatformReadDTOList(banners);
+                return Ok(ResultResponse<IEnumerable<BannersReadDTO>>.Success(ResultBanners, "sucess"));
             }
             catch (Exception ex)
             {
@@ -37,7 +40,7 @@ namespace NewsAPIApp.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Banners>> GetBanner(int id)
+        public async Task<ActionResult<BannersReadDTO>> GetBanner(int id)
         {
             try
             {
@@ -47,12 +50,13 @@ namespace NewsAPIApp.Controllers
                 {
                     return Ok(ResultResponse<Banners>.Fail("Banner not found"));
                 }
+                var ResultBanners = BannerMapProfile.MapToBannersTOformReadDTO(banner);
 
-                return Ok(ResultResponse<Banners>.Success(banner, "success"));
+                return Ok(ResultResponse<BannersReadDTO>.Success(ResultBanners, "success"));
             }
             catch (Exception ex)
             {
-                return Ok(ResultResponse<Banners>.Fail(ex.Message));
+                return Ok(ResultResponse<BannersReadDTO>.Fail(ex.Message));
             }
         }
 
@@ -91,14 +95,22 @@ namespace NewsAPIApp.Controllers
 
         // POST: api/Banners
         [HttpPost]
-        public async Task<ActionResult<Banners>> PostBanner(Banners banner)
+        public async Task<ActionResult<BannersReadDTO>> PostBanner(BannersCreateDto banner)
         {
             try
             {
-                await _unitOfWork.Repository<Banners>().AddAsync(banner);
+                var mapping = BannerMapProfile.MapToBannerCreateDtosTOBanners(banner);
+                if (mapping == null)
+                {
+                    return Ok(ResultResponse<Banners>.Fail("empty data send"));
+                }
+                await _unitOfWork.Repository<Banners>().AddAsync(mapping);
                 await _unitOfWork.CompleteAsync();
 
-                return Ok(ResultResponse<Banners>.Success(banner, "Banner created successfully"));
+                // Convert the saved Banners object to a BannersReadDTO
+                var resultMapping = BannerMapProfile.MapToBannersTOformReadDTO(mapping);
+
+                return Ok(ResultResponse<BannersReadDTO>.Success(resultMapping, "Banner created successfully"));
             }
             catch (Exception ex)
             {

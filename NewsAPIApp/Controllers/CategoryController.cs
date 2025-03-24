@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NewsApi.AppHandler.Genrics.Intrefaces;
+using NewsApi.AppHandler.Mapping;
 using NewsApi.AppHandler.Wrapper.WorkWrapper;
 using NewsAPI.Domain.AppEntity;
+using NewsAPI.Domain.DTOS.CategoryDtos;
 
 namespace NewsAPIApp.Controllers
 {
@@ -18,12 +20,13 @@ namespace NewsAPIApp.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategory()
+        public async Task<ActionResult<IEnumerable<CategoryReadDto>>> GetCategory()
         {
             try
             {
                 var Category = await _unitOfWork.Repository<Category>().GetAllWithAsync();
-                return Ok(ResultResponse<IEnumerable<Category>>.Success(Category, "sucess"));
+                var responseCategory = CategoryMapProfile.MapFromCategoryListToReadDto(Category);
+                return Ok(ResultResponse<IEnumerable<CategoryReadDto>>.Success(responseCategory, "sucess"));
             }
             catch (Exception ex)
             {
@@ -32,7 +35,7 @@ namespace NewsAPIApp.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Category>> Getcategory(int id)
+        public async Task<ActionResult<CategoryReadDto>> Getcategory(int id)
         {
             try
             {
@@ -42,8 +45,9 @@ namespace NewsAPIApp.Controllers
                 {
                     return Ok(ResultResponse<Category>.Fail("category not found"));
                 }
+                var categoryResponse = CategoryMapProfile.MapFromCategoryToReadDto(category);
 
-                return Ok(ResultResponse<Category>.Success(category, "success"));
+                return Ok(ResultResponse<CategoryReadDto>.Success(categoryResponse, "success"));
             }
             catch (Exception ex)
             {
@@ -86,14 +90,20 @@ namespace NewsAPIApp.Controllers
 
         // POST: api/Category
         [HttpPost]
-        public async Task<ActionResult<Category>> Postcategory(Category category)
+        public async Task<ActionResult<CategoryReadDto>> Postcategory(CategoryCreateDto category)
         {
             try
             {
-                await _unitOfWork.Repository<Category>().AddAsync(category);
+                var reciveRequest = CategoryMapProfile.MapFromCategoryToCreateDto(category);
+                if (reciveRequest == null)
+                {
+                    return Ok(ResultResponse<Category>.Fail("Data isEmpty"));
+                }
+                await _unitOfWork.Repository<Category>().AddAsync(reciveRequest);
                 await _unitOfWork.CompleteAsync();
+                var responseCategory = CategoryMapProfile.MapFromCategoryToReadDto(reciveRequest);
 
-                return Ok(ResultResponse<Category>.Success(category, "category created successfully"));
+                return Ok(ResultResponse<CategoryReadDto>.Success(responseCategory, "category created successfully"));
             }
             catch (Exception ex)
             {
